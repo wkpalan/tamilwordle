@@ -445,7 +445,8 @@ function createKeyboard() {
 
 	const getKClass = (char) => {
 		const st = keyStateMap[char]
-		return st ? `${st} key` : "key"
+		const typeClass = CONSONANTS.includes(char) ? "consonant-key" : "vowel-key"
+		return st ? `${st} key ${typeClass}` : `key ${typeClass}`
 	}
 
 	// Row 1 (10 keys)

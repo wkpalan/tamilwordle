@@ -649,9 +649,32 @@ input[type="checkbox"]:focus {
 	}
 }
 
+.key.consonant-key {
+	border: 1.5px solid rgba(148, 163, 184, 0.35);
+	box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.key.vowel-key {
+	border: 1px solid var(--boxborderColor);
+}
+
 .key.incorrect {
 	color: white;
 	background-color: var(--incorrectKeyFontColor);
+}
+
+.key.consonant-key.incorrect {
+	color: #cbd5e1;
+	background-color: #282c34;
+	border: 1.5px solid #475569;
+	opacity: 0.9;
+}
+
+.key.vowel-key.incorrect {
+	color: #94a3b8;
+	background-color: #3b3b3e;
+	border: 1px solid #334155;
+	opacity: 0.75;
 }
 
 .key.incorrect-location {
