@@ -63,10 +63,32 @@ function categorizeWords(datas) {
 	})
 }
 
+let loadedFullDictionaries = { 3: false, 4: false, 5: false }
+
+async function loadFullLengthDictionary(length) {
+	if (loadedFullDictionaries[length]) return
+	try {
+		const resp = await fetch(`words_${length}.json`)
+		if (resp.ok) {
+			const list = await resp.json()
+			wordListsByLength[length].entire = list
+			loadedFullDictionaries[length] = true
+			console.log(`Loaded full dictionary for length ${length}: ${list.length} words`)
+		}
+	} catch (e) {
+		console.log(`Could not load words_${length}.json:`, e)
+	}
+}
+
 async function isItValidTamilWord(string) {
 	const currentList = wordListsByLength[currentWordLength]?.entire || []
 	if (currentList.includes(string) || tamilEntireWordList.includes(string)) {
 		return true
+	}
+	if (!loadedFullDictionaries[currentWordLength]) {
+		await loadFullLengthDictionary(currentWordLength)
+		const updatedList = wordListsByLength[currentWordLength]?.entire || []
+		if (updatedList.includes(string)) return true
 	}
 	try {
 		const resp = await fetch(`https://iapi.glosbe.com/iapi3/wordlist?l1=ta&l2=en&q=${encodeURIComponent(string)}&after=1`)
@@ -77,11 +99,10 @@ async function isItValidTamilWord(string) {
 				return true
 			}
 		}
-		return false
 	} catch (e) {
-		console.log("Error checking online word list", e)
-		return false
+		console.log("Glosbe API validation error:", e)
 	}
+	return false
 }
 
 function getDailyDayCount() {
@@ -900,6 +921,7 @@ function nextNewWordTimer() {
 function initGameForCurrentLength() {
 	stopGame()
 	todaysWord = generateTodaysWord()
+	loadFullLengthDictionary(currentWordLength)
 
 	const dev = getDevWordOverride()
 	const storageKey = getStorageKey("tamilWordle")
