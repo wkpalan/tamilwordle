@@ -309,6 +309,7 @@ function enterText(letter) {
 				const combined = (baseChar + sign).normalize("NFC")
 				lastTile.dataset.letter = combined
 				lastTile.textContent = combined
+				updateVowelKeyLabels()
 				scrollToActiveRow()
 				return
 			}
@@ -325,6 +326,7 @@ function enterText(letter) {
 	box.dataset.letter = letter
 	box.textContent = letter
 	box.dataset.state = "active"
+	updateVowelKeyLabels()
 	scrollToActiveRow()
 }
 
@@ -343,7 +345,39 @@ function deleteText() {
 		delete lastText.dataset.letter
 		delete lastText.dataset.state
 	}
+	updateVowelKeyLabels()
 	scrollToActiveRow()
+}
+
+const VOWEL_KEYS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "ஏ", "ஐ", "ஒ", "ஓ", "ஔ", "ஃ"]
+
+function updateVowelKeyLabels() {
+	const active = activeTiles()
+	const lastTile = active[active.length - 1]
+
+	let baseConsonant = null
+	if (lastTile && lastTile.dataset.letter) {
+		const current = lastTile.dataset.letter
+		const baseChar = [...current][0]
+		if (CONSONANTS.includes(baseChar)) {
+			baseConsonant = baseChar
+		}
+	}
+
+	VOWEL_KEYS.forEach((vowelChar) => {
+		const keyElem = keyboard.querySelector(`[data-key="${vowelChar}"]`)
+		if (!keyElem) return
+
+		if (baseConsonant) {
+			const sign = VOWEL_TO_SIGN_MAP[vowelChar]
+			const combined = (baseConsonant + sign).normalize("NFC")
+			keyElem.textContent = combined
+			keyElem.classList.add("vowel-combined")
+		} else {
+			keyElem.textContent = vowelChar
+			keyElem.classList.remove("vowel-combined")
+		}
+	})
 }
 
 // ----------------- Game Setup & States ----------------- //
@@ -992,6 +1026,7 @@ function initGameForCurrentLength() {
 
 	keyList = createKeys()
 	keyboard.innerHTML = createKeyboard(keyList)
+	updateVowelKeyLabels()
 
 	const statsObj = JSON.parse(localStorage.getItem(getStorageKey("tamilWordleStats"))) || { played: 0 }
 	statsAvailable(statsObj.played > 0)
