@@ -56,7 +56,7 @@
 
 * {
 	box-sizing: border-box;
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: "Tamil", "Tamil Sangam MN", "Noto Sans Tamil", Arial, Helvetica, sans-serif;
 }
 
 html {
@@ -95,7 +95,8 @@ svg {
 	border-bottom: 1px solid var(--navbarBottom);
 	height: 50px;
 }
-.navbar > .title {
+
+.navbar>.title {
 	font-family: "Wordle";
 	font-size: 33px;
 	line-height: 100%;
@@ -107,7 +108,7 @@ svg {
 	user-select: none;
 }
 
-.navbar > .leftmenu {
+.navbar>.leftmenu {
 	padding-left: 15px;
 	display: flex;
 	flex-direction: row;
@@ -117,19 +118,13 @@ svg {
 	fill: var(--iconsColor);
 }
 
-.btn-container{
+.btn-container {
 	min-width: 10px !important;
 }
 
-.kofi-button {
-	min-width: 10px !important;
-}
 
-.kofiimg{
-	height: 100px !important;
-} 
 
-.navbar > .rightmenu {
+.navbar>.rightmenu {
 	fill: var(--iconsColor);
 	padding-right: 15px;
 	display: flex;
@@ -188,6 +183,7 @@ svg {
 	transition: all 0.5s ease-in-out;
 	overflow-y: auto;
 }
+
 #hideSettings {
 	right: -20px;
 }
@@ -205,6 +201,7 @@ svg {
 	from {
 		opacity: 0;
 	}
+
 	to {
 		opacity: 1;
 	}
@@ -286,18 +283,7 @@ svg {
 	font-size: inherit;
 }
 
-.sponsor-custom-topbar {
-	width: 100%;
-	display: flex;
-	position: absolute;
-	top: 0;
-	left: 0;
-	justify-content: end;
-	align-items: start;
-	color: var(--fontColor);
-	height: 50px;
-	user-select: none;
-}
+
 
 .example {
 	display: flex;
@@ -306,7 +292,7 @@ svg {
 	margin: 10px 0px 10px 0px;
 }
 
-.example > .box {
+.example>.box {
 	padding: 10px;
 }
 
@@ -317,6 +303,7 @@ input[type="checkbox"] {
 	-webkit-tap-highlight-color: transparent;
 	cursor: pointer;
 }
+
 input[type="checkbox"]:focus {
 	outline: 0;
 }
@@ -353,9 +340,11 @@ input[type="checkbox"]:focus {
 	box-shadow: 0 1px 2px rgba(44, 44, 44, 0.2);
 	transition: all 0.2s cubic-bezier(0.5, 0.1, 0.75, 1.35);
 }
+
 .switchButton:checked {
 	background: var(--correctKeyFontColor);
 }
+
 .switchButton:checked:before {
 	content: "தமிழ்";
 	position: absolute;
@@ -363,6 +352,7 @@ input[type="checkbox"]:focus {
 	top: 1px;
 	color: white;
 }
+
 .switchButton:checked:after {
 	transform: translatex(50px);
 }
@@ -428,11 +418,13 @@ input[type="checkbox"]:focus {
 	margin-top: 10px;
 	gap: 3rem;
 }
+
 .leftSection p {
 	font-size: 16px;
 	font-weight: bold;
 }
-.statsbottombar > .leftSection {
+
+.statsbottombar>.leftSection {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -440,7 +432,7 @@ input[type="checkbox"]:focus {
 	padding-right: 10px;
 }
 
-.statsbottombar > .rightSection {
+.statsbottombar>.rightSection {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -454,11 +446,13 @@ input[type="checkbox"]:focus {
 	tap-highlight-color: transparent;
 	-webkit-tap-highlight-color: transparent;
 }
-.rate:not(:checked) > input {
+
+.rate:not(:checked)>input {
 	position: absolute;
 	top: -9999px;
 }
-.rate:not(:checked) > label {
+
+.rate:not(:checked)>label {
 	float: right;
 	width: 1em;
 	overflow: hidden;
@@ -467,25 +461,29 @@ input[type="checkbox"]:focus {
 	font-size: 50px;
 	color: #ccc;
 }
-.rate:not(:checked) > label:before {
+
+.rate:not(:checked)>label:before {
 	content: "★ ";
 }
-.rate > input:checked ~ label {
+
+.rate>input:checked~label {
 	color: #ffc700;
 }
-.rate:not(:checked) > label:hover,
-.rate:not(:checked) > label:hover ~ label {
+
+.rate:not(:checked)>label:hover,
+.rate:not(:checked)>label:hover~label {
 	color: #deb217;
 }
-.rate > input:checked + label:hover,
-.rate > input:checked + label:hover ~ label,
-.rate > input:checked ~ label:hover,
-.rate > input:checked ~ label:hover ~ label,
-.rate > label:hover ~ input:checked ~ label {
+
+.rate>input:checked+label:hover,
+.rate>input:checked+label:hover~label,
+.rate>input:checked~label:hover,
+.rate>input:checked~label:hover~label,
+.rate>label:hover~input:checked~label {
 	color: #c59b08;
 }
 
-.feedback > .content {
+.feedback>.content {
 	border: 1px solid lightgray;
 	padding: 10px;
 }
@@ -532,12 +530,13 @@ input[type="checkbox"]:focus {
 	flex-direction: row;
 	align-items: center;
 	gap: 0.5rem;
-  margin-right: 10px;
-  margin-top:10px;
+	margin-right: 10px;
+	margin-top: 10px;
 }
-.share > h3{
-  padding:0px;
-  margin:0px;
+
+.share>h3 {
+	padding: 0px;
+	margin: 0px;
 }
 
 .keyboard {
@@ -643,6 +642,7 @@ input[type="checkbox"]:focus {
 	border-right-color: orange;
 	animation: s2 1s infinite linear;
 }
+
 @keyframes s2 {
 	to {
 		transform: rotate(1turn);
@@ -709,6 +709,7 @@ input[type="checkbox"]:focus {
 	border: 2px solid;
 	position: relative;
 }
+
 .loader::before {
 	content: "";
 	position: absolute;
@@ -718,6 +719,7 @@ input[type="checkbox"]:focus {
 	background: currentColor;
 	animation: p6 2s infinite;
 }
+
 @keyframes p6 {
 	100% {
 		inset: 0;
@@ -850,6 +852,7 @@ input[type="checkbox"]:focus {
 .box.reveal {
 	transform: rotateX(90deg);
 }
+
 .box.winAnimate {
 	animation: winAnimate 500ms ease-in-out;
 }
@@ -881,19 +884,23 @@ input[type="checkbox"]:focus {
 }
 
 @keyframes shake {
+
 	10%,
 	90% {
 		transform: translateX(-1px);
 	}
+
 	20%,
 	80% {
 		transform: translateX(2px);
 	}
+
 	30%,
 	50%,
 	70% {
 		transform: translateX(-4px);
 	}
+
 	40%,
 	60% {
 		transform: translateX(4px);
@@ -911,9 +918,11 @@ input[type="checkbox"]:focus {
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
 }
+
 .day {
 	background: #ffbf71;
 }
+
 .moon {
 	position: absolute;
 	display: block;
@@ -931,6 +940,7 @@ input[type="checkbox"]:focus {
 		rgba(255, 255, 255, 0.1) 6em 13em 0 -4.5em, rgba(255, 255, 255, 0.1) -4em 7em 0 -4.5em,
 		rgba(255, 255, 255, 0.1) -1em 10em 0 -4.5em;
 }
+
 .sun {
 	top: 4.5em;
 	left: 18em;
@@ -949,16 +959,19 @@ input[type="checkbox"]:focus {
 		max-height: calc(100dvh - 270px);
 		min-height: 220px;
 	}
+
 	.gamegrid {
 		grid-template-columns: repeat(var(--word-length, 4), clamp(2.8rem, 16vw, 3.8rem));
 		grid-template-rows: repeat(8, clamp(2.8rem, 16vw, 3.8rem));
 		gap: 4px;
 		padding: 4px;
 	}
+
 	.box {
 		font-size: clamp(1.3rem, 5.2vw, 1.6rem);
 		border-radius: 4px;
 	}
+
 	.keyboard {
 		padding: 8px 3px 18px 3px;
 		gap: 5px;
@@ -999,14 +1012,16 @@ input[type="checkbox"]:focus {
 		padding: 0 8px;
 	}
 
-	.navbar > .title {
+	.navbar>.title {
 		font-size: 24px;
 	}
+
 	.statsbottombar {
 		justify-content: space-between;
 		align-items: space-between;
 		gap: 0;
 	}
+
 	.statscontainer {
 		justify-content: space-around;
 	}
@@ -1015,9 +1030,11 @@ input[type="checkbox"]:focus {
 		min-height: 120px;
 		margin-right: 10px;
 	}
+
 	.leftSection p {
 		font-size: 11px;
 	}
+
 	.kofi {
 		font-size: 11px;
 	}

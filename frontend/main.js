@@ -351,6 +351,15 @@ function deleteText() {
 
 const VOWEL_KEYS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "ஏ", "ஐ", "ஒ", "ஓ", "ஔ", "ஃ"]
 
+function resetVowelKeyLabels() {
+	VOWEL_KEYS.forEach((vowelChar) => {
+		const keyElem = keyboard.querySelector(`[data-key="${vowelChar}"]`)
+		if (!keyElem) return
+		keyElem.textContent = vowelChar
+		keyElem.classList.remove("vowel-combined")
+	})
+}
+
 function updateVowelKeyLabels() {
 	const active = activeTiles()
 	const lastTile = active[active.length - 1]
@@ -599,6 +608,7 @@ async function onAnswerSubmit() {
 			}
 		}
 		setGuessedWord(userguess)
+		resetVowelKeyLabels()
 		activeTiles().forEach((...e) => {
 			reveal(...e, userguess)
 		})
@@ -793,21 +803,7 @@ function hideHelper() {
 	startGame()
 }
 
-function showSponsor() {
-	stopGame()
-	setTimeout(() => {
-		document.querySelector(".sponsor").style.opacity = 1
-	}, 10)
-	document.querySelector(".sponsor").style.display = "flex"
-}
 
-function hideSponsor() {
-	document.querySelector(".sponsor").style.opacity = 0
-	setTimeout(() => {
-		document.querySelector(".sponsor").style.display = "none"
-	}, 500)
-	startGame()
-}
 
 function showStatistics() {
 	stopGame()
@@ -1098,10 +1094,7 @@ async function main() {
 
 	document.getElementById("helperButton").onclick = showHelper
 	document.getElementById("hideHelper").onclick = hideHelper
-	document.getElementById("sponsorButton").onclick = showSponsor
-	document.getElementById("hideSponsor").onclick = hideSponsor
-	document.getElementById("buyingMeCoffee").onclick = ()=>{hideFeedback();showSponsor()}
-	document.getElementById("buyMeCoffee").onclick = ()=>{hideSettings();showSponsor()}
+
 	document.getElementById("statistics").onclick = showStatistics
 	document.getElementById("hideStatistics").onclick = hideStatistics
 	document.getElementById("hideFeedBack").onclick = hideFeedback

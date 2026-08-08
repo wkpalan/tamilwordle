@@ -21,7 +21,7 @@ This application is a 100% standalone static web app built with:
 
 ## Contribution
 
-If you have any suggestions, bug reports, or would like to contribute to the game's development, please visit the [GitHub repository](https://github.com/The-Robin-Hood/tamilwordle) and follow the guidelines for contributing.
+If you have any suggestions, bug reports, or would like to contribute to the game's development, please visit the [GitHub repository](https://github.com/wkpalan/tamilwordle) and follow the guidelines for contributing.
 
 ## License
 
