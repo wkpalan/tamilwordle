@@ -88,9 +88,9 @@
   <div class="overlay helper">
     <div class="content">
       <div class="topbar">
-        <input type="checkbox" class="switchButton" id="translateSwitch" />
-        <h3 id="howtoplay-english">HOW TO PLAY</h3>
-        <h3 id="howtoplay-tamil" class="hidden">விதிமுறைகள்</h3>
+        <input type="checkbox" class="switchButton" id="translateSwitch" checked />
+        <h3 id="howtoplay-english" class="hidden">HOW TO PLAY</h3>
+        <h3 id="howtoplay-tamil">விதிமுறைகள்</h3>
         <button aria-label="Exit Menu. Click to hide the helper menu" id="hideHelper" class="crossX">
           <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
             <path fill="var(--color-tone-1)"
@@ -99,7 +99,7 @@
           </svg>
         </button>
       </div>
-      <div id="instructions-english" class="contentcontainer">
+      <div id="instructions-english" class="contentcontainer hidden">
         <p>
           Guess the WORDLE in eight tries. <br />
           <br />
@@ -161,7 +161,7 @@
         </p>
       </div>
 
-      <div id="instructions-tamil" class="contentcontainer hidden">
+      <div id="instructions-tamil" class="contentcontainer">
         <p>
           ஐந்து முயற்சியில் வார்த்தையைக் கண்டுபிடியுங்கள். <br />
           <br />
