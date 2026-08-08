@@ -1029,7 +1029,20 @@ function initGameForCurrentLength() {
 	setTimeout(scrollToActiveRow, 300)
 }
 
-const CURRENT_APP_VERSION = "1.2.0"
+const getAppVersion = () => {
+	if (typeof __APP_VERSION__ !== "undefined") {
+		return __APP_VERSION__
+	}
+	const now = new Date()
+	const year = now.getFullYear()
+	const month = String(now.getMonth() + 1).padStart(2, "0")
+	const day = String(now.getDate()).padStart(2, "0")
+	const hours = String(now.getHours()).padStart(2, "0")
+	const mins = String(now.getMinutes()).padStart(2, "0")
+	return `v${year}.${month}.${day}-${hours}${mins}`
+}
+
+const CURRENT_APP_VERSION = getAppVersion()
 const DATA_VERSION = 2
 
 function migrateUserData() {
@@ -1113,6 +1126,11 @@ async function main() {
 
 	if (!localStorage.getItem("tamilWordleFeedback")) {
 		localStorage.setItem("tamilWordleFeedback", "false")
+	}
+
+	const versionDisplay = document.getElementById("appVersionDisplay")
+	if (versionDisplay) {
+		versionDisplay.textContent = `Version ${CURRENT_APP_VERSION}`
 	}
 
 	checkAppReleaseUpdate()
