@@ -650,12 +650,16 @@ input[type="checkbox"]:focus {
 }
 
 .key.consonant-key {
-	border: 1.5px solid rgba(148, 163, 184, 0.35);
-	box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+	border: 1.5px solid #64748b;
+	background-color: #2d3748;
+	color: #f8fafc;
+	box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 
 .key.vowel-key {
-	border: 1px solid var(--boxborderColor);
+	border: 1.5px solid #4a5568;
+	background-color: #3f495a;
+	color: #ffffff;
 }
 
 .key.incorrect {
@@ -664,16 +668,16 @@ input[type="checkbox"]:focus {
 }
 
 .key.consonant-key.incorrect {
-	color: #cbd5e1;
-	background-color: #282c34;
-	border: 1.5px solid #475569;
-	opacity: 0.9;
+	color: #a0aec0;
+	background-color: #1a202c;
+	border: 1.5px solid #2d3748;
+	opacity: 0.85;
 }
 
 .key.vowel-key.incorrect {
-	color: #94a3b8;
-	background-color: #3b3b3e;
-	border: 1px solid #334155;
+	color: #718096;
+	background-color: #38383c;
+	border: 1.5px solid #27272a;
 	opacity: 0.75;
 }
 
