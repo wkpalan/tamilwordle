@@ -1133,6 +1133,11 @@ async function main() {
 		versionDisplay.textContent = `Version ${CURRENT_APP_VERSION}`
 	}
 
+	const navbarVersion = document.getElementById("navbarVersion")
+	if (navbarVersion) {
+		navbarVersion.textContent = CURRENT_APP_VERSION
+	}
+
 	checkAppReleaseUpdate()
 	initGameForCurrentLength()
 	nextNewWordTimer()
