@@ -663,10 +663,11 @@ const INDEPENDENT_VOWELS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "�
 
 function getBaseAndVowel(grapheme) {
 	if (!grapheme) return { base: "", vowel: null }
-	const chars = [...grapheme]
+	const normalized = grapheme.trim().normalize("NFC")
+	const chars = [...normalized]
 	const base = chars[0]
 
-	if (INDEPENDENT_VOWELS.includes(base) && chars.length === 1) {
+	if (INDEPENDENT_VOWELS.includes(base)) {
 		return { base: base, vowel: base }
 	}
 
