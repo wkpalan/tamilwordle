@@ -1,6 +1,7 @@
 import { resolve } from "path";
 
 module.exports = {
+  base: "./",
   build: {
     outDir: "build",
     rollupOptions: {

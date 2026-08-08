@@ -13,15 +13,11 @@ Tamil Wordle is a word-guessing game based on the popular game Wordle, but speci
 
 ## Development
 
-Frontend : 
+This application is a 100% standalone static web app built with:
 - HTML
 - CSS
-- JavaScript via vite.js
-
-Backend :
-- Express.js
-- MongoDB
-- Prisma
+- JavaScript via Vite
+- Hosted on GitHub Pages
 
 ## Contribution
 

@@ -3,71 +3,178 @@ import Toastify from "toastify-js"
 
 let tamilEntireWordList = []
 let tamilMainWordList = []
-let todaysWord
-let keyList
-let dayCount
+let todaysWord = []
+let keyList = []
+let dayCount = 0
+let currentWordLength = 4
+
+let wordListsByLength = {
+	3: { main: [], entire: [] },
+	4: { main: [], entire: [] },
+	5: { main: [], entire: [] },
+}
+
 const alphabets = [
-	"q",
-	"w",
-	"e",
-	"r",
-	"t",
-	"y",
-	"u",
-	"i",
-	"o",
-	"p",
-	"a",
-	"s",
-	"d",
-	"f",
-	"g",
-	"h",
-	"j",
-	"k",
-	"l",
-	"z",
-	"x",
-	"c",
-	"v",
-	"b",
-	"n",
-	"m",
+	"q", "w", "e", "r", "t", "y", "u", "i", "o", "p",
+	"a", "s", "d", "f", "g", "h", "j", "k", "l",
+	"z", "x", "c", "v", "b", "n", "m",
 ]
+
 const keyboard = document.querySelector(".keyboard")
 const gamegrid = document.querySelector(".gamegrid")
 
+const splitTamilWord = (word) => word.match(/[\u0b80-\u0bff][\u0bbe-\u0bcd\u0bd7]?/gi) || []
+
+const getStorageKey = (key) => `${key}_${currentWordLength}`
+
 // ----------------- Basic Function  ----------------- //
 async function fetchBasics() {
-	// Fetches the entire word list and the main word list
-	let data = await fetch("/words.json")
-	let json = await data.json()
-	return json
+	try {
+		let data = await fetch("top_words.json")
+		let json = await data.json()
+		return json
+	} catch (e) {
+		let data = await fetch("words.json")
+		let json = await data.json()
+		return json
+	}
+}
+
+function categorizeWords(datas) {
+	datas.tamilMainWordList.forEach((wordArr) => {
+		const len = wordArr.length
+		if (wordListsByLength[len]) {
+			wordListsByLength[len].main.push(wordArr)
+		}
+	})
+
+	datas.tamilEntireWordList.forEach((wordStr) => {
+		const letters = splitTamilWord(wordStr)
+		const len = letters.length
+		if (wordListsByLength[len]) {
+			wordListsByLength[len].entire.push(wordStr)
+		}
+	})
+
+	;[3, 4, 5].forEach((len) => {
+		if (wordListsByLength[len].main.length < 10 && wordListsByLength[len].entire.length > 0) {
+			wordListsByLength[len].main = wordListsByLength[len].entire.map((w) => splitTamilWord(w))
+		}
+	})
 }
 
 async function isItValidTamilWord(string) {
-	// Checks if the word is a valid tamil word from the backend
+	const currentList = wordListsByLength[currentWordLength]?.entire || []
+	if (currentList.includes(string) || tamilEntireWordList.includes(string)) {
+		return true
+	}
 	try {
-		const data = await fetch("https://api.tamilwordle.in/valid?word=" + string)
-		var json = await data.json()
-		if (json.valid === true) {
-			return true
+		const resp = await fetch(`https://iapi.glosbe.com/iapi3/wordlist?l1=ta&l2=en&q=${encodeURIComponent(string)}&after=1`)
+		const data = await resp.json()
+		if (data && data.after && data.after[0] && data.after[0].phrase) {
+			const phrase = data.after[0].phrase
+			if (phrase.split(" ").includes(string)) {
+				return true
+			}
 		}
 		return false
 	} catch (e) {
-		console.log("Error Fetching")
+		console.log("Error checking online word list", e)
 		return false
 	}
 }
 
-function generateTodaysWord() {
-	// Generates the word for the day
-	const now = new Date()
-	const start = new Date(now.getFullYear(), 0, 0)
-	const diff = now - start
+function getDailyDayCount() {
+	const epoch = Date.UTC(2024, 0, 1)
+	const now = Date.now()
 	const oneDay = 1000 * 60 * 60 * 24
-	dayCount = Math.floor(diff / oneDay)
-	return tamilMainWordList[dayCount]
+	return Math.floor((now - epoch) / oneDay)
+}
+
+function createSeededRandom(seed) {
+	let s = Math.abs(seed) % 233280
+	return function () {
+		s = (s * 9301 + 49297) % 233280
+		return s / 233280
+	}
+}
+
+function getDailyFeaturedWordLength() {
+	const day = getDailyDayCount()
+	const lengths = [3, 4, 5]
+	const index = (day * 7 + 13) % lengths.length
+	return lengths[index]
+}
+
+function getDevWordOverride() {
+	try {
+		let raw = new URLSearchParams(window.location.search).get("word")
+		if (!raw && window.location.pathname.includes("word=")) {
+			const parts = window.location.pathname.split("word=")
+			if (parts[1]) raw = parts[1].split("/")[0].split("?")[0]
+		}
+		if (!raw) {
+			raw = localStorage.getItem("debugWord")
+		}
+		if (raw) {
+			const decoded = decodeURIComponent(raw)
+			const letters = splitTamilWord(decoded)
+			if (letters.length >= 3 && letters.length <= 5) {
+				return { word: decoded, letters }
+			}
+		}
+	} catch (e) {
+		console.log("Dev word error:", e)
+	}
+	return null
+}
+
+function generateTodaysWord() {
+	dayCount = getDailyDayCount()
+
+	const dev = getDevWordOverride()
+	if (dev) {
+		currentWordLength = dev.letters.length
+		console.log("🛠️ [Dev Mode] Overriding target word to:", dev.word, dev.letters)
+		return dev.letters
+	}
+
+	const pool = wordListsByLength[currentWordLength]?.main || []
+	if (!pool || pool.length === 0) return ["த", "மி", "ழ்"]
+
+	const seed = (dayCount * 9301 + currentWordLength * 49297) % 233280
+	const index = seed % pool.length
+	return pool[index]
+}
+
+// Global Dev Console Helpers for Testing
+window.setTestWord = (word) => {
+	localStorage.setItem("debugWord", word)
+	localStorage.removeItem(getStorageKey("tamilWordle"))
+	localStorage.removeItem(getStorageKey("keyboard"))
+	localStorage.removeItem(getStorageKey("timer"))
+	console.log(`Test word set to "${word}". Local storage cleared. Reloading...`)
+	location.reload()
+}
+
+window.clearTestWord = () => {
+	localStorage.removeItem("debugWord")
+	localStorage.removeItem(getStorageKey("tamilWordle"))
+	localStorage.removeItem(getStorageKey("keyboard"))
+	localStorage.removeItem(getStorageKey("timer"))
+	console.log("Test word cleared. Local storage cleared. Reloading...")
+	location.reload()
+}
+
+function renderGrid() {
+	gamegrid.innerHTML = ""
+	gamegrid.style.setProperty("--word-length", currentWordLength)
+	const totalBoxes = currentWordLength * 8
+	for (let i = 0; i < totalBoxes; i++) {
+		const box = document.createElement("div")
+		box.className = "box"
+		gamegrid.appendChild(box)
+	}
 }
 
 // ----------------- Helper Functions  ----------------- //
@@ -78,7 +185,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // ----------------- Game Interaction  ----------------- //
 function startGame() {
-	const storage = JSON.parse(localStorage.getItem("tamilWordle"))
+	const storage = JSON.parse(localStorage.getItem(getStorageKey("tamilWordle")))
 	if (storage && storage.status !== "Win" && storage.status !== "Lose") {
 		document.addEventListener("click", mouseInteraction)
 		document.addEventListener("keydown", keyboardInteraction)
@@ -122,33 +229,108 @@ function keyboardInteraction(e) {
 	return
 }
 
+function scrollToActiveRow() {
+	const container = document.querySelector(".gamegrid-container")
+	if (!container) return
+	const activeBox = gamegrid.querySelector(":not([data-letter])") || activeTiles()[0]
+	if (activeBox) {
+		activeBox.scrollIntoView({ behavior: "smooth", block: "nearest" })
+	}
+}
+
+const VOWEL_TO_SIGN_MAP = {
+	"அ": "",
+	"ஆ": "ா",
+	"இ": "ி",
+	"ஈ": "ீ",
+	"உ": "ு",
+	"ஊ": "ூ",
+	"எ": "ெ",
+	"ஏ": "ே",
+	"ஐ": "ை",
+	"ஒ": "ொ",
+	"ஓ": "ோ",
+	"ஔ": "ௌ",
+	"ஃ": "்",
+}
+
+const SIGN_TO_VOWEL_MAP = {
+	"": "அ",
+	"ா": "ஆ",
+	"ி": "இ",
+	"ீ": "ஈ",
+	"ு": "உ",
+	"ூ": "ஊ",
+	"ெ": "எ",
+	"ே": "ஏ",
+	"ை": "ஐ",
+	"ொ": "ஒ",
+	"ோ": "ஓ",
+	"ௌ": "ஔ",
+	"்": "ஃ",
+}
+
+const CONSONANTS = ["க", "ங", "ச", "ஞ", "ட", "ண", "த", "ந", "ப", "ம", "ய", "ர", "ல", "வ", "ழ", "ள", "ற", "ன"]
+
 function enterText(letter) {
-	if (activeTiles().length > 3) return
-	var state = JSON.parse(localStorage.getItem("timer"))
+	const active = activeTiles()
+	const isVowelKey = Object.prototype.hasOwnProperty.call(VOWEL_TO_SIGN_MAP, letter)
+
+	if (isVowelKey) {
+		const lastTile = active[active.length - 1]
+		if (lastTile && lastTile.dataset.letter) {
+			const current = lastTile.dataset.letter
+			const baseChar = [...current][0]
+			const isBaseConsonant = CONSONANTS.includes(baseChar)
+
+			if (isBaseConsonant) {
+				const sign = VOWEL_TO_SIGN_MAP[letter]
+				const combined = (baseChar + sign).normalize("NFC")
+				lastTile.dataset.letter = combined
+				lastTile.textContent = combined
+				scrollToActiveRow()
+				return
+			}
+		}
+	}
+
+	if (active.length >= currentWordLength) return
+	var state = JSON.parse(localStorage.getItem(getStorageKey("timer")))
 	if (!state) {
-		localStorage.setItem("timer", JSON.stringify(new Date().getTime()))
+		localStorage.setItem(getStorageKey("timer"), JSON.stringify(new Date().getTime()))
 	}
 	const box = gamegrid.querySelector(":not([data-letter])")
+	if (!box) return
 	box.dataset.letter = letter
 	box.textContent = letter
 	box.dataset.state = "active"
+	scrollToActiveRow()
 }
 
 function deleteText() {
-	const lastText = activeTiles()[activeTiles().length - 1]
+	const active = activeTiles()
+	const lastText = active[active.length - 1]
 	if (lastText == null) return
-	lastText.textContent = ""
-	delete lastText.dataset.letter
-	delete lastText.dataset.state
+
+	const chars = [...lastText.dataset.letter]
+	if (chars.length > 1) {
+		const base = chars[0]
+		lastText.dataset.letter = base
+		lastText.textContent = base
+	} else {
+		lastText.textContent = ""
+		delete lastText.dataset.letter
+		delete lastText.dataset.state
+	}
+	scrollToActiveRow()
 }
 
 // ----------------- Game Setup & States ----------------- //
 
 function setGameStats(stats = {}) {
-	// Sets the game stats
+	const statsKey = getStorageKey("tamilWordleStats")
 	if (Object.keys(stats).length === 0) {
-		if (!localStorage.getItem("tamilWordleStats")) {
-			// If stats are not available, create a new one
+		if (!localStorage.getItem(statsKey)) {
 			stats = {
 				played: 0,
 				wins: 0,
@@ -156,11 +338,10 @@ function setGameStats(stats = {}) {
 				lastWinTimeTaken: 0,
 			}
 		} else {
-			stats = JSON.parse(localStorage.getItem("tamilWordleStats"))
+			stats = JSON.parse(localStorage.getItem(statsKey))
 		}
 	}
-	console.log(stats)
-	localStorage.setItem("tamilWordleStats", JSON.stringify(stats))
+	localStorage.setItem(statsKey, JSON.stringify(stats))
 	document.getElementById("played").innerHTML = stats.played
 	document.getElementById("wins").innerHTML = stats.wins
 	document.getElementById("streaks").innerHTML = stats.streak
@@ -168,11 +349,11 @@ function setGameStats(stats = {}) {
 }
 
 function setCurrentGameState(gameState, data_states) {
-	// Sets the current game state
 	gameState.forEach(async (word, wordIndex) => {
 		if (word !== "") {
 			word.forEach(async (tile, index) => {
 				const box = gamegrid.querySelector(":not([data-letter])")
+				if (!box) return
 				box.dataset.letter = tile
 				await sleep(100 * (index + 1))
 				box.classList.add("reveal")
@@ -186,23 +367,22 @@ function setCurrentGameState(gameState, data_states) {
 }
 
 function freshDay() {
-	// Removes all the previous data and starts a new game
-	localStorage.removeItem("tamilWordle")
-	localStorage.removeItem("keyboard")
-	localStorage.removeItem("timer")
+	localStorage.removeItem(getStorageKey("tamilWordle"))
+	localStorage.removeItem(getStorageKey("keyboard"))
+	localStorage.removeItem(getStorageKey("timer"))
 	const storage = {
-		gameState: ["", "", "", "", ""],
-		data_states: [null, null, null, null, null],
+		gameState: ["", "", "", "", "", "", "", ""],
+		data_states: [null, null, null, null, null, null, null, null],
 		status: "Initiated",
 		answer: todaysWord,
 		expires: String(new Date()).slice(0, 15),
 	}
-	localStorage.setItem("tamilWordle", JSON.stringify(storage))
+	localStorage.setItem(getStorageKey("tamilWordle"), JSON.stringify(storage))
 	setGameStats()
 }
 
 function setGuessedWord(userguess) {
-	let storage = JSON.parse(localStorage.getItem("tamilWordle"))
+	let storage = JSON.parse(localStorage.getItem(getStorageKey("tamilWordle")))
 	let index = storage.gameState.indexOf("")
 	storage.gameState[index] = userguess
 	var datasets = []
@@ -217,11 +397,12 @@ function setGuessedWord(userguess) {
 	})
 	storage["data_states"][index] = datasets
 	storage.status = "Progress"
-	localStorage.setItem("tamilWordle", JSON.stringify(storage))
+	localStorage.setItem(getStorageKey("tamilWordle"), JSON.stringify(storage))
 }
 
 function gameCompletedSetCurrentStats(condition) {
-	let stats = JSON.parse(localStorage.getItem("tamilWordleStats"))
+	const statsKey = getStorageKey("tamilWordleStats")
+	let stats = JSON.parse(localStorage.getItem(statsKey)) || { played: 0, wins: 0, streak: 0, lastWinTimeTaken: 0 }
 	stats.played++
 	if (condition === "win") {
 		stats.wins++
@@ -230,7 +411,7 @@ function gameCompletedSetCurrentStats(condition) {
 		stats.streak = 0
 	}
 	let intervalDur = intervalToDuration({
-		start: JSON.parse(localStorage.getItem("timer")),
+		start: JSON.parse(localStorage.getItem(getStorageKey("timer"))) || new Date().getTime(),
 		end: new Date().getTime(),
 	})
 	if (intervalDur.hours > 0) {
@@ -240,98 +421,103 @@ function gameCompletedSetCurrentStats(condition) {
 		stats.lastWinTimeTaken = zero(intervalDur.minutes) + ":" + zero(intervalDur.seconds)
 	}
 	setGameStats(stats)
-	localStorage.removeItem("timer")
+	localStorage.removeItem(getStorageKey("timer"))
 }
 
 // ----------------- Game Logic ----------------- //
 
+const ROW_1 = ["அ", "ஆ", "இ", "ஈ", "க", "ச", "ட", "த", "ப", "ற"]
+const ROW_2 = ["உ", "ஊ", "எ", "ஏ", "ங", "ஞ", "ண", "ந", "ம", "ன"]
+const ROW_3 = ["ஐ", "ஒ", "ஓ", "ஔ", "ய", "ர", "ல", "வ", "ழ", "ள"]
+
 function createKeys() {
-	// Creates tamil key for the keyboard and stores it in local storage
-	let totalkeys = []
-
-	if (JSON.parse(localStorage.getItem("keyboard"))) {
-		totalkeys = JSON.parse(localStorage.getItem("keyboard")).letters
-		return totalkeys
-	}
-	// Adds the letters of the word of the day to the keyboard
-	todaysWord.forEach((e) => {
-		if (!totalkeys.includes(e)) {
-			totalkeys.push(e)
-		}
-	})
-
-	while (totalkeys.length < 26) {
-		// Selects a random word from the word list and checks if it has any letters in common with the word of the day
-		let word = tamilMainWordList[Math.floor(Math.random() * tamilMainWordList.length)]
-		let difference = word.filter((x) => todaysWord.includes(x))
-		if (difference.length == 0) {
-			continue
-		}
-
-		// Adds the remaining letters to the keyboard which are not already present and stops when the keyboard is full
-		for (let i in word) {
-			if (!totalkeys.includes(word[i])) {
-				if (totalkeys.length < 26) {
-					totalkeys.push(word[i])
-				} else {
-					break
-				}
-			}
-		}
-	}
-
-	// Shuffles the keyboard
-	let shuffled = totalkeys
-		.map((value) => ({ value, sort: Math.random() }))
-		.sort((a, b) => a.sort - b.sort)
-		.map(({ value }) => value)
-	let emptyStateKey = []
-	for (let i = 0; i < 26; i++) {
-		emptyStateKey.push(null)
-	}
-	localStorage.setItem("keyboard", JSON.stringify({ letters: shuffled, state: emptyStateKey }))
-
-	return shuffled
+	return [
+		...ROW_1,
+		...ROW_2,
+		...ROW_3,
+		"ஃ",
+	]
 }
 
-function createKeyboard(keyList) {
-	// Dynamically creates the keyboard
-	var keys = `<div class='overlayloader'><div class='spinner'></div></div>`
-	var keyState = JSON.parse(localStorage.getItem("keyboard")).state
-	for (let i in keyList) {
-		keys += `<button class="${
-			keyState[i] != null ? keyState[i] + " key" : "key"
-		}" data-key="${decodeURIComponent(keyList[i])}">${decodeURIComponent(keyList[i])}</button>`
-		if (i == 9 || i == 18) {
-			keys += "<div class='space'></div>"
-		}
-		if (i == 18) {
-			keys += '<button data-enter class="key special">Enter</button>'
-		}
+function createKeyboard() {
+	let keys = `<div class='overlayloader'><div class='spinner'></div></div>`
+	const keyStateMap = (JSON.parse(localStorage.getItem(getStorageKey("keyboard"))) || {}).stateMap || {}
+
+	const getKClass = (char) => {
+		const st = keyStateMap[char]
+		return st ? `${st} key` : "key"
 	}
-	keys += `<button data-delete aria-label='Delete Key' class="key special">
-  <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
+
+	// Row 1 (10 keys)
+	keys += `<div class="keyboard-row grid-row">`
+	ROW_1.forEach((char) => {
+		keys += `<button class="${getKClass(char)}" data-key="${char}">${char}</button>`
+	})
+	keys += `</div>`
+
+	// Row 2 (10 keys)
+	keys += `<div class="keyboard-row grid-row">`
+	ROW_2.forEach((char) => {
+		keys += `<button class="${getKClass(char)}" data-key="${char}">${char}</button>`
+	})
+	keys += `</div>`
+
+	// Row 3 (10 keys)
+	keys += `<div class="keyboard-row grid-row">`
+	ROW_3.forEach((char) => {
+		keys += `<button class="${getKClass(char)}" data-key="${char}">${char}</button>`
+	})
+	keys += `</div>`
+
+	// Row 4 (Bottom Row: ஃ, சரிபார், ⌫)
+	keys += `<div class="keyboard-row bottom-row">`
+	keys += `<button class="${getKClass("ஃ")} key special-single-key" data-key="ஃ">ஃ</button>`
+	keys += `<button data-enter class="key special enter-key">சரிபார்</button>`
+	keys += `<button data-delete aria-label='Delete Key' class="key special delete-key">
+  <svg xmlns="http://www.w3.org/2000/svg" height="22" viewBox="0 0 24 24" width="22">
     <path fill="var(--color-tone-1)" d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7.07L2.4 12l4.66-7H22v14zm-11.59-2L14 13.41 17.59 17 19 15.59 15.41 12 19 8.41 17.59 7 14 10.59 10.41 7 9 8.41 12.59 12 9 15.59z"></path>
   </svg>
   </button>`
+	keys += `</div>`
+
 	return keys
+}
+
+function toast(msg) {
+	Toastify({
+		text: msg,
+		duration: 3000,
+		gravity: "top",
+		position: "center",
+		stopOnFocus: true,
+		style: {
+			background: "white",
+			color: "black",
+			fontWeight: "bold",
+			display: "flex",
+			alignItems: "center",
+			justifyContent: "center",
+			textAlign: "center",
+		},
+	}).showToast()
 }
 
 async function onAnswerSubmit() {
 	let overloayloader = document.querySelector(".overlayloader")
 	stopGame()
 	const activeBox = [...activeTiles()]
-	if (activeBox.length !== 4) {
+	if (activeBox.length !== currentWordLength) {
 		toast("Not enough letters")
 		errorShake(activeBox)
 		startGame()
 		return
 	} else {
 		const userguess = activeBox.map((e) => e.dataset.letter)
-		if (!tamilEntireWordList.includes(userguess.join(""))) {
-			overloayloader.style.display = "flex"
+		const isLocalValid = wordListsByLength[currentWordLength]?.entire.includes(userguess.join("")) || tamilEntireWordList.includes(userguess.join(""))
+		if (!isLocalValid) {
+			if (overloayloader) overloayloader.style.display = "flex"
 			const checkInternet = await isItValidTamilWord(userguess.join(""))
-			overloayloader.style.display = "none"
+			if (overloayloader) overloayloader.style.display = "none"
 			if (!checkInternet) {
 				toast("Not in word list")
 				errorShake(activeBox)
@@ -347,13 +533,14 @@ async function onAnswerSubmit() {
 }
 
 function checkAnswer(userguess, boxes) {
-	let storage = JSON.parse(localStorage.getItem("tamilWordle"))
+	let storageKey = getStorageKey("tamilWordle")
+	let storage = JSON.parse(localStorage.getItem(storageKey))
 	if (userguess.join("") === todaysWord.join("")) {
 		toast("You Win!")
 		winAnimate(boxes)
 		stopGame()
 		storage.status = "Win"
-		localStorage.setItem("tamilWordle", JSON.stringify(storage))
+		localStorage.setItem(storageKey, JSON.stringify(storage))
 		gameCompletedSetCurrentStats("win")
 		setTimeout(() => {
 			statsAvailable(true)
@@ -371,7 +558,7 @@ function checkAnswer(userguess, boxes) {
 			document.getElementById("statistics").click()
 		}, 1500)
 	}
-	localStorage.setItem("tamilWordle", JSON.stringify(storage))
+	localStorage.setItem(storageKey, JSON.stringify(storage))
 }
 
 // ---------------- Game Animations ---------------- //
@@ -389,9 +576,44 @@ function errorShake(box) {
 	})
 }
 
+const INDEPENDENT_VOWELS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "ஏ", "ஐ", "ஒ", "ஓ", "ஔ", "ஃ"]
+
+function getBaseAndVowel(grapheme) {
+	if (!grapheme) return { base: "", vowel: "" }
+	const chars = [...grapheme]
+	const base = chars[0]
+
+	if (INDEPENDENT_VOWELS.includes(base) && chars.length === 1) {
+		return { base: base, vowel: base }
+	}
+
+	const sign = chars.length > 1 ? chars.slice(1).join("") : ""
+	const vowel = SIGN_TO_VOWEL_MAP[sign] || "அ"
+	return { base: base, vowel: vowel }
+}
+
+function updateKeyState(char, state) {
+	if (!char) return
+	const keyboardKey = getStorageKey("keyboard")
+	const Lkeyboard = JSON.parse(localStorage.getItem(keyboardKey)) || { stateMap: {} }
+	if (!Lkeyboard.stateMap) Lkeyboard.stateMap = {}
+
+	const currentState = Lkeyboard.stateMap[char]
+	if (currentState === "correct") return
+	if (currentState === "incorrect-location" && state === "incorrect") return
+
+	Lkeyboard.stateMap[char] = state
+	localStorage.setItem(keyboardKey, JSON.stringify(Lkeyboard))
+
+	const keyElem = keyboard.querySelector(`[data-key="${char}"]`)
+	if (keyElem) {
+		keyElem.classList.remove("correct", "incorrect", "incorrect-location")
+		keyElem.classList.add(state)
+	}
+}
+
 function reveal(box, index, array, userguess) {
 	const letter = box.dataset.letter
-	const key = keyboard.querySelector(`[data-key="${letter}"]`)
 	setTimeout(() => {
 		box.classList.add("reveal")
 	}, (index * 500) / 2)
@@ -399,22 +621,38 @@ function reveal(box, index, array, userguess) {
 	box.addEventListener(
 		"transitionend",
 		() => {
-			const Lkeyboard = JSON.parse(localStorage.getItem("keyboard"))
 			box.classList.remove("reveal")
+
+			const targetBases = todaysWord.map((w) => getBaseAndVowel(w).base)
+			const targetVowels = todaysWord.map((w) => getBaseAndVowel(w).vowel)
+
+			const { base: gBase, vowel: gVowel } = getBaseAndVowel(letter)
+
 			if (todaysWord[index] === letter) {
 				box.dataset.state = "correct"
-				key.classList.add("correct")
-				Lkeyboard.state[keyList.indexOf(letter)] = "correct"
+				updateKeyState(gBase, "correct")
+				updateKeyState(gVowel, "correct")
 			} else if (todaysWord.includes(letter)) {
 				box.dataset.state = "incorrect-location"
-				key.classList.add("incorrect-location")
-				Lkeyboard.state[keyList.indexOf(letter)] = "incorrect-location"
+				updateKeyState(gBase, "incorrect-location")
+				updateKeyState(gVowel, "incorrect-location")
 			} else {
 				box.dataset.state = "incorrect"
-				key.classList.add("incorrect")
-				Lkeyboard.state[keyList.indexOf(letter)] = "incorrect"
+
+				// Base consonant evaluation
+				if (targetBases.includes(gBase)) {
+					updateKeyState(gBase, "incorrect-location")
+				} else {
+					updateKeyState(gBase, "incorrect")
+				}
+
+				// Vowel evaluation
+				if (targetVowels.includes(gVowel)) {
+					updateKeyState(gVowel, "incorrect-location")
+				} else {
+					updateKeyState(gVowel, "incorrect")
+				}
 			}
-			localStorage.setItem("keyboard", JSON.stringify(Lkeyboard))
 
 			if (index === todaysWord.length - 1) {
 				box.addEventListener(
@@ -480,16 +718,8 @@ function hideSponsor() {
 	startGame()
 }
 
-
 function showStatistics() {
 	stopGame()
-	if (!localStorage.getItem("tamilWordleFeedback")) {
-		localStorage.setItem("tamilWordleFeedback", false)
-	}
-	if (localStorage.getItem("tamilWordleFeedback") === "false") {
-		showFeedback()
-		return
-	}
 	setTimeout(() => {
 		document.querySelector(".statistics").style.opacity = 1
 	}, 10)
@@ -529,6 +759,7 @@ function showFeedback() {
 }
 
 function hideFeedback() {
+	localStorage.setItem("tamilWordleFeedback", "true")
 	document.querySelector(".feedback").style.opacity = 0
 	setTimeout(() => {
 		document.querySelector(".feedback").style.display = "none"
@@ -556,15 +787,16 @@ function translateInstruction() {
 }
 
 async function shareButton() {
-	// shares the result of the game
-	const tamilWordle = JSON.parse(localStorage.getItem("tamilWordle"))
+	const storageKey = getStorageKey("tamilWordle")
+	const tamilWordle = JSON.parse(localStorage.getItem(storageKey))
+	if (!tamilWordle) return
 	const data_states = tamilWordle["data_states"]
 	const gameState = tamilWordle["gameState"]
 	let attempts = "X"
 	if (tamilWordle.status === "Win") {
 		attempts = gameState.filter((x) => x !== "").length
 	}
-	let textShare = `தமிழ் Wordle \nDay-${dayCount} Attempt-${attempts}/5 \n\n`
+	let textShare = `தமிழ் Wordle (${currentWordLength} Letters)\nDay-${dayCount} Attempt-${attempts}/8 \n\n`
 	data_states.forEach((row) => {
 		if (row != null) {
 			row.forEach((ans) => {
@@ -589,7 +821,6 @@ async function shareButton() {
 }
 
 function setMode(mode) {
-	// set dark or light mode
 	if (mode === "dark") {
 		document.body.classList.add("darkmode")
 		document.getElementById("themeSwitch").classList.remove("day")
@@ -603,8 +834,7 @@ function setMode(mode) {
 	}
 }
 
-function switchMode() {
-	// switch between dark and light mode
+function switchTheme() {
 	var mode = localStorage.getItem("mode")
 	if (mode === "light") {
 		setMode("dark")
@@ -629,26 +859,12 @@ function onFeedbackSubmit(e) {
 	e.preventDefault()
 	let feedbackForm = document.getElementById("feedbackForm")
 	let rating = feedbackForm.querySelector('input[name="rating"]:checked')
-	// let feedback = feedbackForm.querySelector('textarea[name="feedback"]').value
 	let feedback = "REMOVED FEEDBACK 🤐"
-	console.log(rating, feedback)
 	if (!rating) {
 		toast("Please select a rating")
 		return
 	}
 	rating = rating.value
-	if (!feedback) {
-		toast(
-			"Stars given, words hidden ?👀\nDon't leave us starstruck🌠,\nWe're all ears for your feedback👂🏻"
-		)
-		return
-	}
-	if (feedback.length < 10) {
-		toast(
-			"Short and sweet, but we want the treat!\nA bit more text, pretty please?\nYour words make our day! 🍬💌"
-		)
-		return
-	}
 	let formdata = new FormData()
 	formdata.append("entry.1755405700", rating)
 	formdata.append("entry.553521465", feedback)
@@ -661,29 +877,10 @@ function onFeedbackSubmit(e) {
 		}
 	).then(() => {
 		toast("Thank you for your feedback!")
-		localStorage.setItem("tamilWordleFeedback", true)
+		localStorage.setItem("tamilWordleFeedback", "true")
 		hideFeedback()
 		showStatistics()
 	})
-}
-
-function toast(msg) {
-	Toastify({
-		text: msg,
-		duration: 3000,
-		gravity: "top",
-		position: "center",
-		stopOnFocus: true,
-		style: {
-			background: "white",
-			color: "black",
-			fontWeight: "bold",
-			display: "flex",
-			alignItems: "center",
-			justifyContent: "center",
-			textAlign: "center",
-		},
-	}).showToast()
 }
 
 function nextNewWordTimer() {
@@ -699,13 +896,66 @@ function nextNewWordTimer() {
 	}, 1000)
 }
 
+function initGameForCurrentLength() {
+	stopGame()
+	todaysWord = generateTodaysWord()
+
+	const dev = getDevWordOverride()
+	const storageKey = getStorageKey("tamilWordle")
+
+	if (dev) {
+		freshDay()
+		renderGrid()
+		startGame()
+	} else if (localStorage.getItem(storageKey)) {
+		renderGrid()
+		const storage = JSON.parse(localStorage.getItem(storageKey))
+		if (storage.expires !== String(new Date()).slice(0, 15)) {
+			freshDay()
+			startGame()
+		} else {
+			setGameStats()
+			setCurrentGameState(storage.gameState, storage.data_states)
+
+			if (storage.status === "Progress" || storage.status === "Initiated") {
+				startGame()
+			}
+			if (storage.status === "Win" || storage.status === "Lose") {
+				setTimeout(() => {
+					document.getElementById("statistics").click()
+				}, 1500)
+			}
+		}
+	} else {
+		renderGrid()
+		freshDay()
+		startGame()
+	}
+
+	keyList = createKeys()
+	keyboard.innerHTML = createKeyboard(keyList)
+
+	const statsObj = JSON.parse(localStorage.getItem(getStorageKey("tamilWordleStats"))) || { played: 0 }
+	statsAvailable(statsObj.played > 0)
+	setTimeout(scrollToActiveRow, 300)
+}
+
 // ------------------ MAIN ------------------
 
 async function main() {
 	const datas = await fetchBasics()
 	tamilEntireWordList = datas.tamilEntireWordList
 	tamilMainWordList = datas.tamilMainWordList
-	todaysWord = generateTodaysWord()
+
+	categorizeWords(datas)
+
+	// Automatically set today's daily puzzle word length (3, 4, or 5 letters), with dev override support
+	const dev = getDevWordOverride()
+	if (dev) {
+		currentWordLength = dev.letters.length
+	} else {
+		currentWordLength = getDailyFeaturedWordLength()
+	}
 
 	document.getElementById("helperButton").onclick = showHelper
 	document.getElementById("hideHelper").onclick = hideHelper
@@ -720,54 +970,21 @@ async function main() {
 	document.getElementById("hideSettings").onclick = hideSettings
 	document.getElementById("translateSwitch").onclick = translateInstruction
 	document.getElementById("shareBtn").onclick = shareButton
-	document.getElementById("themeSwitch").onclick = switchMode
+	document.getElementById("themeSwitch").onclick = switchTheme
 	document.getElementById("feedbackForm").onsubmit = onFeedbackSubmit
 
-	// setting up the game
 	if (!localStorage.getItem("mode")) {
 		localStorage.setItem("mode", "dark")
 	} else {
 		setMode(localStorage.getItem("mode"))
 	}
 
-	// User Feedback Setup
 	if (!localStorage.getItem("tamilWordleFeedback")) {
-		localStorage.setItem("tamilWordleFeedback", false)
+		localStorage.setItem("tamilWordleFeedback", "false")
 	}
 
-	if (localStorage.getItem("tamilWordle")) {
-		const storage = JSON.parse(localStorage.getItem("tamilWordle"))
-		if (storage.expires !== String(new Date()).slice(0, 15)) {
-			// If the game is expired, start a new game
-			freshDay()
-			startGame()
-		} else {
-			setGameStats()
-			setCurrentGameState(storage.gameState, storage.data_states)
-
-			if (storage.status === "Progress" || storage.status === "Initiated") {
-				console.log("Game Initiated")
-				startGame()
-			}
-			if (storage.status === "Win" || storage.status === "Lose") {
-				setTimeout(() => {
-					document.getElementById("statistics").click()
-				}, 1500)
-			}
-		}
-	} else {
-		document.getElementById("helperButton").click()
-		freshDay()
-	}
-
-	keyList = createKeys()
-	keyboard.innerHTML = createKeyboard(keyList)
+	initGameForCurrentLength()
 	nextNewWordTimer()
-	if (JSON.parse(localStorage.getItem("tamilWordleStats")).played === 0) {
-		statsAvailable(false)
-	} else {
-		statsAvailable(true)
-	}
 }
 
 main()
