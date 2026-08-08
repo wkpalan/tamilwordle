@@ -379,7 +379,24 @@ function setCurrentGameState(gameState, data_states) {
 				await sleep(100 * (index + 1))
 				box.classList.add("reveal")
 				await sleep(200 * (index + 1))
-				box.dataset.state = data_states[wordIndex][index]
+				const state = data_states[wordIndex][index]
+				box.dataset.state = state
+
+				const targetObj = getBaseAndVowel(todaysWord[index])
+				const guessObj = getBaseAndVowel(tile)
+
+				if (guessObj.base && targetObj.base && guessObj.base === targetObj.base) {
+					box.dataset.consonantMatch = "true"
+				} else {
+					box.dataset.consonantMatch = "false"
+				}
+
+				if (guessObj.vowel && targetObj.vowel && guessObj.vowel === targetObj.vowel) {
+					box.dataset.vowelMatch = "true"
+				} else {
+					box.dataset.vowelMatch = "false"
+				}
+
 				box.innerHTML = tile
 				box.classList.remove("reveal")
 			})
@@ -601,7 +618,7 @@ function errorShake(box) {
 const INDEPENDENT_VOWELS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "ஏ", "ஐ", "ஒ", "ஓ", "ஔ", "ஃ"]
 
 function getBaseAndVowel(grapheme) {
-	if (!grapheme) return { base: "", vowel: "" }
+	if (!grapheme) return { base: "", vowel: null }
 	const chars = [...grapheme]
 	const base = chars[0]
 
@@ -646,34 +663,52 @@ function reveal(box, index, array, userguess) {
 			box.classList.remove("reveal")
 
 			const targetBases = todaysWord.map((w) => getBaseAndVowel(w).base)
-			const targetVowels = todaysWord.map((w) => getBaseAndVowel(w).vowel)
+			const targetVowels = todaysWord.map((w) => getBaseAndVowel(w).vowel).filter(Boolean)
 
 			const { base: gBase, vowel: gVowel } = getBaseAndVowel(letter)
+			const targetObjAtIndex = getBaseAndVowel(todaysWord[index])
+
+			const isStandaloneVowel = INDEPENDENT_VOWELS.includes(letter)
 
 			if (todaysWord[index] === letter) {
 				box.dataset.state = "correct"
-				updateKeyState(gBase, "correct")
-				updateKeyState(gVowel, "correct")
+				if (isStandaloneVowel) {
+					updateKeyState(letter, "correct")
+				} else {
+					updateKeyState(gBase, "correct")
+				}
 			} else if (todaysWord.includes(letter)) {
 				box.dataset.state = "incorrect-location"
-				updateKeyState(gBase, "incorrect-location")
-				updateKeyState(gVowel, "incorrect-location")
+				if (isStandaloneVowel) {
+					updateKeyState(letter, "incorrect-location")
+				} else {
+					updateKeyState(gBase, "incorrect-location")
+				}
 			} else {
 				box.dataset.state = "incorrect"
 
-				// Base consonant evaluation
-				if (targetBases.includes(gBase)) {
-					updateKeyState(gBase, "incorrect-location")
+				if (isStandaloneVowel) {
+					updateKeyState(letter, "incorrect")
 				} else {
-					updateKeyState(gBase, "incorrect")
+					// Base consonant evaluation
+					if (targetBases.includes(gBase)) {
+						updateKeyState(gBase, "incorrect-location")
+					} else {
+						updateKeyState(gBase, "incorrect")
+					}
 				}
+			}
 
-				// Vowel evaluation
-				if (targetVowels.includes(gVowel)) {
-					updateKeyState(gVowel, "incorrect-location")
-				} else {
-					updateKeyState(gVowel, "incorrect")
-				}
+			if (gBase && targetObjAtIndex.base && gBase === targetObjAtIndex.base) {
+				box.dataset.consonantMatch = "true"
+			} else {
+				box.dataset.consonantMatch = "false"
+			}
+
+			if (gVowel && targetObjAtIndex.vowel && gVowel === targetObjAtIndex.vowel) {
+				box.dataset.vowelMatch = "true"
+			} else {
+				box.dataset.vowelMatch = "false"
 			}
 
 			if (index === todaysWord.length - 1) {
