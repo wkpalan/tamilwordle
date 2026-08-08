@@ -124,10 +124,10 @@ svg {
 }
 
 .version-badge {
-	font-size: 10px;
-	font-weight: 600;
+	font-size: 13px;
+	font-weight: 700;
 	font-family: monospace;
-	opacity: 0.65;
+	opacity: 0.85;
 	line-height: 1;
 	letter-spacing: 0.05em;
 	margin-top: 2px;
