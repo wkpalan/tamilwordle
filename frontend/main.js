@@ -998,6 +998,52 @@ function initGameForCurrentLength() {
 	setTimeout(scrollToActiveRow, 300)
 }
 
+const CURRENT_APP_VERSION = "1.2.0"
+const DATA_VERSION = 2
+
+function migrateUserData() {
+	[3, 4, 5].forEach((len) => {
+		const statsKey = `tamilWordleStats_${len}`
+		try {
+			let stats = JSON.parse(localStorage.getItem(statsKey)) || null
+			if (stats) {
+				stats.version = DATA_VERSION
+				stats.played = Number(stats.played) || 0
+				stats.wins = Number(stats.wins) || 0
+				stats.streak = Number(stats.streak) || 0
+				stats.lastWinTimeTaken = stats.lastWinTimeTaken || "00:00"
+				localStorage.setItem(statsKey, JSON.stringify(stats))
+			}
+		} catch (e) {
+			console.log(`Error migrating stats for length ${len}:`, e)
+		}
+
+		const stateKey = `tamilWordle_${len}`
+		try {
+			let game = JSON.parse(localStorage.getItem(stateKey)) || null
+			if (game && (!Array.isArray(game.gameState) || !Array.isArray(game.data_states))) {
+				localStorage.removeItem(stateKey)
+			}
+		} catch (e) {
+			localStorage.removeItem(stateKey)
+		}
+	})
+}
+
+function checkAppReleaseUpdate() {
+	const lastVersion = localStorage.getItem("app_version")
+	if (!lastVersion || lastVersion !== CURRENT_APP_VERSION) {
+		console.log(`🚀 App release update detected: ${lastVersion || "legacy"} -> ${CURRENT_APP_VERSION}`)
+		migrateUserData()
+		localStorage.setItem("app_version", CURRENT_APP_VERSION)
+		if (lastVersion) {
+			toast(`App updated to v${CURRENT_APP_VERSION}`)
+		}
+	} else {
+		migrateUserData()
+	}
+}
+
 // ------------------ MAIN ------------------
 
 async function main() {
@@ -1041,6 +1087,7 @@ async function main() {
 		localStorage.setItem("tamilWordleFeedback", "false")
 	}
 
+	checkAppReleaseUpdate()
 	initGameForCurrentLength()
 	nextNewWordTimer()
 }
