@@ -1,8 +1,7 @@
-const CACHE_NAME = "tamilwordle-v2.0";
+const CACHE_NAME = "tamilwordle-v2.1";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
-  "./style.css",
   "./assets/manifest.json",
   "./assets/apple-touch-icon.png",
   "./assets/android-chrome-192x192.png",
@@ -13,7 +12,13 @@ const ASSETS_TO_CACHE = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        ASSETS_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => console.log("SW skipped caching item:", url, err))
+        )
+      )
+    )
   );
   self.skipWaiting();
 });

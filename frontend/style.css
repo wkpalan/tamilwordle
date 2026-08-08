@@ -1,11 +1,11 @@
 @font-face {
 	font-family: "Wordle";
-	src: url("/assets/wordleFont.woff2");
+	src: url("./assets/wordleFont.woff2");
 }
 
 @font-face {
 	font-family: "Tamil";
-	src: url("/assets/tamilfont.ttf");
+	src: url("./assets/tamilfont.ttf");
 }
 
 :root {
