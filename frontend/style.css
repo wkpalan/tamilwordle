@@ -56,6 +56,15 @@
 
 * {
 	box-sizing: border-box;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.box,
+.key,
+#instructions-tamil,
+#howtoplay-tamil,
+.tamil-text,
+[lang="ta"] {
 	font-family: "Tamil", "Tamil Sangam MN", "Noto Sans Tamil", Arial, Helvetica, sans-serif;
 }
 
