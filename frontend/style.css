@@ -695,6 +695,28 @@ input[type="checkbox"]:focus {
 	box-shadow: 0 0 6px rgba(96, 165, 250, 0.4);
 }
 
+.key.vowel-key.vowel-combined.incorrect {
+	background-color: #27272a;
+	border: 1.5px solid #18181b;
+	color: #71717a;
+	box-shadow: none;
+	opacity: 0.7;
+}
+
+.key.vowel-key.vowel-combined.incorrect-location {
+	background-color: var(--incorrectLocationKeyFontColor);
+	border: 1.5px solid #b59f3b;
+	color: #ffffff;
+	box-shadow: none;
+}
+
+.key.vowel-key.vowel-combined.correct {
+	background-color: var(--correctKeyFontColor);
+	border: 1.5px solid #538d4e;
+	color: #ffffff;
+	box-shadow: none;
+}
+
 .key.incorrect {
 	color: white;
 	background-color: var(--incorrectKeyFontColor);

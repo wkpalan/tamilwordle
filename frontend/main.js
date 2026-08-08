@@ -351,18 +351,58 @@ function deleteText() {
 
 const VOWEL_KEYS = ["அ", "ஆ", "இ", "ஈ", "உ", "ஊ", "எ", "ஏ", "ஐ", "ஒ", "ஓ", "ஔ", "ஃ"]
 
-function resetVowelKeyLabels() {
-	VOWEL_KEYS.forEach((vowelChar) => {
-		const keyElem = keyboard.querySelector(`[data-key="${vowelChar}"]`)
-		if (!keyElem) return
-		keyElem.textContent = vowelChar
-		keyElem.classList.remove("vowel-combined")
+function getKeyStateMaps() {
+	const storageKey = getStorageKey("tamilWordle")
+	const storage = JSON.parse(localStorage.getItem(storageKey)) || {}
+	const gameState = storage.gameState || []
+	const dataStates = storage.data_states || []
+	const exactGraphemeMap = {}
+	const consonantBaseMap = {}
+
+	const mergeState = (current, next) => {
+		if (current === "correct") return "correct"
+		if (current === "incorrect-location" && next !== "correct") return "incorrect-location"
+		return next
+	}
+
+	const targetBases = todaysWord ? todaysWord.map((w) => getBaseAndVowel(w).base) : []
+
+	gameState.forEach((row, rowIdx) => {
+		if (Array.isArray(row) && dataStates[rowIdx]) {
+			row.forEach((grapheme, colIdx) => {
+				const state = dataStates[rowIdx][colIdx]
+				if (grapheme && state) {
+					exactGraphemeMap[grapheme] = mergeState(exactGraphemeMap[grapheme], state)
+
+					const isStandalone = INDEPENDENT_VOWELS.includes(grapheme)
+					if (!isStandalone) {
+						const { base } = getBaseAndVowel(grapheme)
+						if (base) {
+							if (state === "incorrect" && targetBases.includes(base)) {
+								consonantBaseMap[base] = mergeState(consonantBaseMap[base], "incorrect-location")
+							} else {
+								consonantBaseMap[base] = mergeState(consonantBaseMap[base], state)
+							}
+						}
+					} else {
+						consonantBaseMap[grapheme] = mergeState(consonantBaseMap[grapheme], state)
+					}
+				}
+			})
+		}
 	})
+
+	return { exactGraphemeMap, consonantBaseMap }
+}
+
+function resetVowelKeyLabels() {
+	updateVowelKeyLabels()
 }
 
 function updateVowelKeyLabels() {
 	const active = activeTiles()
 	const lastTile = active[active.length - 1]
+	const { exactGraphemeMap, consonantBaseMap } = getKeyStateMaps()
 
 	let baseConsonant = null
 	if (lastTile && lastTile.dataset.letter) {
@@ -373,18 +413,39 @@ function updateVowelKeyLabels() {
 		}
 	}
 
+	CONSONANTS.forEach((cChar) => {
+		const cKeyElem = keyboard.querySelector(`[data-key="${cChar}"]`)
+		if (cKeyElem) {
+			cKeyElem.classList.remove("correct", "incorrect", "incorrect-location")
+			const st = consonantBaseMap[cChar] || exactGraphemeMap[cChar]
+			if (st) {
+				cKeyElem.classList.add(st)
+			}
+		}
+	})
+
 	VOWEL_KEYS.forEach((vowelChar) => {
 		const keyElem = keyboard.querySelector(`[data-key="${vowelChar}"]`)
 		if (!keyElem) return
+
+		keyElem.classList.remove("vowel-combined", "correct", "incorrect", "incorrect-location")
 
 		if (baseConsonant) {
 			const sign = VOWEL_TO_SIGN_MAP[vowelChar]
 			const combined = (baseConsonant + sign).normalize("NFC")
 			keyElem.textContent = combined
 			keyElem.classList.add("vowel-combined")
+
+			const st = exactGraphemeMap[combined]
+			if (st) {
+				keyElem.classList.add(st)
+			}
 		} else {
 			keyElem.textContent = vowelChar
-			keyElem.classList.remove("vowel-combined")
+			const st = exactGraphemeMap[vowelChar]
+			if (st) {
+				keyElem.classList.add(st)
+			}
 		}
 	})
 }
@@ -717,24 +778,21 @@ function reveal(box, index, array, userguess) {
 
 			if (todaysWord[index] === letter) {
 				box.dataset.state = "correct"
-				if (isStandaloneVowel) {
-					updateKeyState(letter, "correct")
-				} else {
+				updateKeyState(letter, "correct")
+				if (!isStandaloneVowel) {
 					updateKeyState(gBase, "correct")
 				}
 			} else if (todaysWord.includes(letter)) {
 				box.dataset.state = "incorrect-location"
-				if (isStandaloneVowel) {
-					updateKeyState(letter, "incorrect-location")
-				} else {
+				updateKeyState(letter, "incorrect-location")
+				if (!isStandaloneVowel) {
 					updateKeyState(gBase, "incorrect-location")
 				}
 			} else {
 				box.dataset.state = "incorrect"
+				updateKeyState(letter, "incorrect")
 
-				if (isStandaloneVowel) {
-					updateKeyState(letter, "incorrect")
-				} else {
+				if (!isStandaloneVowel) {
 					// Base consonant evaluation
 					if (targetBases.includes(gBase)) {
 						updateKeyState(gBase, "incorrect-location")
@@ -760,6 +818,7 @@ function reveal(box, index, array, userguess) {
 				box.addEventListener(
 					"transitionend",
 					() => {
+						updateVowelKeyLabels()
 						startGame()
 						checkAnswer(userguess, array)
 					},
