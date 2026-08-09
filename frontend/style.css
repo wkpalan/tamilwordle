@@ -69,7 +69,9 @@
 }
 
 html {
-	min-height: 100%;
+	height: 100%;
+	height: 100dvh;
+	overflow: hidden;
 	scroll-behavior: smooth;
 	-webkit-text-size-adjust: none;
 }
@@ -78,11 +80,12 @@ body {
 	background-color: var(--bgColor);
 	display: flex;
 	flex-direction: column;
-	min-height: 100vh;
+	height: 100%;
+	height: 100dvh;
 	margin: 0;
 	padding: 0;
 	width: 100%;
-	overflow-y: auto;
+	overflow: hidden;
 	transition: background-color 0.5s ease-in-out;
 }
 
@@ -103,6 +106,7 @@ svg {
 	color: var(--fontColor);
 	border-bottom: 1px solid var(--navbarBottom);
 	height: 50px;
+	flex-shrink: 0;
 }
 
 .title-wrapper {
@@ -571,7 +575,10 @@ input[type="checkbox"]:focus {
 	gap: 6px;
 	align-items: center;
 	max-width: 100%;
-	padding: 15px 10px 25px 10px;
+	width: 100%;
+	flex-shrink: 0;
+	padding: 10px 8px calc(14px + env(safe-area-inset-bottom, 0px)) 8px;
+	box-sizing: border-box;
 }
 
 .keyboard-row {
@@ -778,9 +785,8 @@ input[type="checkbox"]:focus {
 	display: flex;
 	justify-content: center;
 	align-items: flex-start;
-	flex-grow: 1;
-	height: clamp(16rem, 48vh, 23.2rem);
-	max-height: clamp(16rem, 48vh, 23.2rem);
+	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
 	padding: 5px 0;
@@ -1002,38 +1008,40 @@ input[type="checkbox"]:focus {
 
 @media (max-width: 600px) {
 	.gamegrid-container {
-		height: calc(100dvh - 270px);
-		max-height: calc(100dvh - 270px);
-		min-height: 220px;
+		flex: 1;
+		min-height: 0;
+		height: auto;
+		max-height: none;
 	}
 
 	.gamegrid {
-		grid-template-columns: repeat(var(--word-length, 4), clamp(2.8rem, 16vw, 3.8rem));
-		grid-template-rows: repeat(8, clamp(2.8rem, 16vw, 3.8rem));
-		gap: 4px;
+		grid-template-columns: repeat(var(--word-length, 4), clamp(2.5rem, 14vw, 3.6rem));
+		grid-template-rows: repeat(8, clamp(2.5rem, 14vw, 3.6rem));
+		gap: 3px;
 		padding: 4px;
 	}
 
 	.box {
-		font-size: clamp(1.3rem, 5.2vw, 1.6rem);
+		font-size: clamp(1.1rem, 4.8vw, 1.5rem);
 		border-radius: 4px;
 	}
 
 	.keyboard {
-		padding: 8px 3px 18px 3px;
-		gap: 5px;
+		padding: 4px 2px calc(8px + env(safe-area-inset-bottom, 0px)) 2px;
+		gap: 4px;
 		width: 100%;
 		box-sizing: border-box;
+		flex-shrink: 0;
 	}
 
 	.keyboard-row {
-		gap: 3px;
+		gap: 2px;
 		width: 100%;
 	}
 
 	.key {
-		font-size: clamp(14px, 3.8vw, 17px);
-		height: clamp(42px, 5.8vh, 50px);
+		font-size: clamp(13px, 3.6vw, 16px);
+		height: clamp(34px, 5vh, 44px);
 		min-width: 0;
 		flex: 1;
 		padding: 0 1px;
@@ -1041,13 +1049,13 @@ input[type="checkbox"]:focus {
 	}
 
 	.key.special {
-		font-size: clamp(13px, 3.5vw, 16px);
+		font-size: clamp(12px, 3.2vw, 15px);
 		flex: 2.8;
 	}
 
 	.key.special-single-key {
 		flex: 1.1;
-		font-size: clamp(15px, 4vw, 18px);
+		font-size: clamp(13px, 3.8vw, 16px);
 	}
 
 	.key.delete-key {
@@ -1087,8 +1095,16 @@ input[type="checkbox"]:focus {
 	}
 }
 
-@media (max-height: 600px) {
+@media (max-height: 680px) {
 	.gamegrid {
-		font-size: clamp(0.5rem, 2.5vmin, 1.5rem);
+		grid-template-columns: repeat(var(--word-length, 4), clamp(2.1rem, 9vh, 3.0rem));
+		grid-template-rows: repeat(8, clamp(2.1rem, 9vh, 3.0rem));
+		gap: 2px;
+		padding: 2px;
+	}
+
+	.key {
+		height: clamp(28px, 4.2vh, 38px);
+		font-size: clamp(11px, 3.2vw, 14px);
 	}
 }
