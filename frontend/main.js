@@ -867,6 +867,24 @@ function hideHelper() {
 
 function showStatistics() {
 	stopGame()
+
+	const storageKey = getStorageKey("tamilWordle")
+	const tamilWordle = JSON.parse(localStorage.getItem(storageKey))
+	const todaysAnswerElem = document.getElementById("todaysAnswerContainer")
+	const todaysAnswerText = document.getElementById("todaysAnswerText")
+
+	if (tamilWordle && (tamilWordle.status === "Win" || tamilWordle.status === "Lose")) {
+		const word = (todaysWord || []).join("")
+		if (todaysAnswerElem && todaysAnswerText && word) {
+			todaysAnswerText.textContent = word
+			todaysAnswerElem.style.display = "flex"
+		}
+	} else {
+		if (todaysAnswerElem) {
+			todaysAnswerElem.style.display = "none"
+		}
+	}
+
 	setTimeout(() => {
 		document.querySelector(".statistics").style.opacity = 1
 	}, 10)
