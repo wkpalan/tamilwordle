@@ -4,7 +4,7 @@ Tamil Wordle is a word-guessing game based on the popular game Wordle, but speci
 
 ## How to Play
 
-1. Visit the game website at [tamilwordle.in](https://www.tamilwordle.in).
+1. Visit the game website at [https://wkpalan.github.io/tamilwordle/](https://wkpalan.github.io/tamilwordle/).
 2. The game presents you with a hidden Tamil word.
 3. Guess the word by entering a five-letter combination.
 4. After each guess, the game provides feedback to indicate which letters are correct and in the correct position (highlighted in green), and which letters are correct but in the wrong position (highlighted in yellow).

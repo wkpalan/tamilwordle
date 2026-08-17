@@ -564,6 +564,28 @@ function gameCompletedSetCurrentStats(condition) {
 	}
 	setGameStats(stats)
 	localStorage.removeItem(getStorageKey("timer"))
+
+	// Record persistent history entry
+	try {
+		const storageKey = getStorageKey("tamilWordle")
+		const storage = JSON.parse(localStorage.getItem(storageKey)) || {}
+		const targetWordStr = todaysWord ? todaysWord.join("") : (storage.solution ? storage.solution.join("") : "")
+		const userGuesses = storage.board_words || []
+		saveGameHistoryRecord({
+			word: targetWordStr,
+			length: currentWordLength,
+			date: storage.date || new Date().toISOString().split("T")[0],
+			dayCount: typeof dayCount !== "undefined" ? dayCount : null,
+			won: condition === "win",
+			attempts: userGuesses.length,
+			maxAttempts: 8,
+			timeTaken: stats.lastWinTimeTaken,
+			guesses: userGuesses,
+			timestamp: new Date().getTime()
+		})
+	} catch (e) {
+		console.error("Error saving history in gameCompletedSetCurrentStats:", e)
+	}
 }
 
 // ----------------- Game Logic ----------------- //
@@ -932,6 +954,186 @@ function hideFeedback() {
 	startGame()
 }
 
+// ----------------- Word History Management ----------------- //
+
+const HISTORY_STORAGE_KEY = "tamilWordleHistory"
+let currentHistoryFilter = "all"
+
+function getGameHistory() {
+	try {
+		return JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY)) || []
+	} catch (e) {
+		console.error("Error reading history:", e)
+		return []
+	}
+}
+
+function saveGameHistoryRecord(record) {
+	try {
+		let history = getGameHistory()
+		// Remove existing entry for same date and length to avoid duplicates
+		history = history.filter((item) => !(item.date === record.date && item.length === record.length))
+		history.unshift(record)
+		localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history))
+	} catch (e) {
+		console.error("Error saving game history:", e)
+	}
+}
+
+function renderHistoryList(filter = "all") {
+	currentHistoryFilter = filter
+	const history = getGameHistory()
+
+	// Update filter button active states
+	document.querySelectorAll(".history-filter-btn").forEach((btn) => {
+		if (btn.dataset.filter === filter) {
+			btn.classList.add("active")
+		} else {
+			btn.classList.remove("active")
+		}
+	})
+
+	// Calculate summary stats
+	const totalGames = history.length
+	const totalWins = history.filter((h) => h.won).length
+	const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0
+	const winningGames = history.filter((h) => h.won && h.attempts > 0)
+	const avgTries = winningGames.length > 0 ? (winningGames.reduce((acc, g) => acc + g.attempts, 0) / winningGames.length).toFixed(1) : "-"
+
+	const totalGamesEl = document.getElementById("historyTotalGames")
+	const winRateEl = document.getElementById("historyWinRate")
+	const avgTriesEl = document.getElementById("historyAvgTries")
+	if (totalGamesEl) totalGamesEl.textContent = totalGames
+	if (winRateEl) winRateEl.textContent = `${winRate}%`
+	if (avgTriesEl) avgTriesEl.textContent = avgTries
+
+	// Filter history list
+	let filtered = history
+	if (filter === "3" || filter === "4" || filter === "5") {
+		filtered = history.filter((h) => Number(h.length) === Number(filter))
+	} else if (filter === "win") {
+		filtered = history.filter((h) => h.won)
+	} else if (filter === "lose") {
+		filtered = history.filter((h) => !h.won)
+	}
+
+	const container = document.getElementById("historyListContainer")
+	if (!container) return
+
+	if (filtered.length === 0) {
+		container.innerHTML = `
+			<div class="history-empty-state">
+				<i class="fa fa-book-open"></i>
+				<p>இன்னும் வார்த்தைகள் விளையாடப்படவில்லை<br><span style="font-size: 12px; opacity: 0.7;">(No words played in this category yet)</span></p>
+			</div>
+		`
+		return
+	}
+
+	container.innerHTML = filtered
+		.map((item) => {
+			const wonClass = item.won ? "won" : "lost"
+			const statusLabel = item.won ? "வெற்றி (Won)" : "தோல்வி (Lost)"
+			const dateStr = item.date || (item.timestamp ? new Date(item.timestamp).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "")
+			const agarathiUrl = `https://agarathi.com/word/${encodeURIComponent(item.word)}`
+
+			const guessesHtml = (item.guesses || [])
+				.map((g, idx) => {
+					const isLastWin = item.won && idx === item.guesses.length - 1
+					return `<span class="history-guess-chip ${isLastWin ? "last-win" : ""}">${g}</span>`
+				})
+				.join("")
+
+			return `
+				<div class="history-card">
+					<div class="history-card-header">
+						<div class="history-card-word-group">
+							<span class="history-card-word">${item.word}</span>
+							<span class="history-length-tag">${item.length} எழுத்து</span>
+						</div>
+						<span class="history-badge ${wonClass}">${statusLabel}</span>
+					</div>
+					<div class="history-card-meta">
+						<span>📅 ${dateStr}</span>
+						<span>🎯 ${item.attempts}/${item.maxAttempts || 8} முயற்சிகள்</span>
+						${item.timeTaken ? `<span>⏱️ ${item.timeTaken}</span>` : ""}
+					</div>
+					${item.guesses && item.guesses.length > 0 ? `<div class="history-guesses-tray">${guessesHtml}</div>` : ""}
+					<div class="history-card-footer">
+						<a href="${agarathiUrl}" target="_blank" rel="noopener noreferrer" class="history-dict-link">
+							📖 பொருள் அறி (Dictionary) <i class="fa fa-arrow-up-right-from-square" style="font-size: 9px;"></i>
+						</a>
+					</div>
+				</div>
+			`
+		})
+		.join("")
+}
+
+function showHistory() {
+	stopGame()
+	renderHistoryList(currentHistoryFilter)
+	setTimeout(() => {
+		document.querySelector(".history").style.opacity = 1
+	}, 10)
+	document.querySelector(".history").style.display = "flex"
+}
+
+function hideHistory() {
+	document.querySelector(".history").style.opacity = 0
+	setTimeout(() => {
+		document.querySelector(".history").style.display = "none"
+	}, 500)
+	startGame()
+}
+
+function exportHistory(format) {
+	const history = getGameHistory()
+	if (history.length === 0) {
+		toast("No history to export")
+		return
+	}
+
+	let blob, filename
+	if (format === "json") {
+		const dataStr = JSON.stringify(history, null, 2)
+		blob = new Blob([dataStr], { type: "application/json" })
+		filename = `tamil_wordle_history_${new Date().toISOString().split("T")[0]}.json`
+	} else {
+		// CSV format
+		const headers = ["Word", "Length", "Date", "Status", "Attempts", "MaxAttempts", "TimeTaken", "Guesses"]
+		const rows = history.map((item) => [
+			`"${item.word}"`,
+			item.length,
+			`"${item.date}"`,
+			item.won ? "Won" : "Lost",
+			item.attempts,
+			item.maxAttempts || 8,
+			`"${item.timeTaken || ""}"`,
+			`"${(item.guesses || []).join(" -> ")}"`
+		])
+		const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+		blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+		filename = `tamil_wordle_history_${new Date().toISOString().split("T")[0]}.csv`
+	}
+
+	const link = document.createElement("a")
+	link.href = URL.createObjectURL(blob)
+	link.download = filename
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+	toast(`Exported as ${format.toUpperCase()}`)
+}
+
+function clearHistory() {
+	if (confirm("வார்த்தை வரலாற்றை முழுமையாக அழிக்க விரும்புகிறீர்களா?\nAre you sure you want to clear your entire word history?")) {
+		localStorage.removeItem(HISTORY_STORAGE_KEY)
+		renderHistoryList(currentHistoryFilter)
+		toast("History cleared")
+	}
+}
+
 function translateInstruction() {
 	var switchBtn = document.getElementById("translateSwitch")
 	let instructionsEng = document.getElementById("instructions-english")
@@ -1185,6 +1387,22 @@ async function main() {
 
 	document.getElementById("helperButton").onclick = showHelper
 	document.getElementById("hideHelper").onclick = hideHelper
+
+	document.getElementById("historyButton").onclick = showHistory
+	document.getElementById("hideHistory").onclick = hideHistory
+
+	document.querySelectorAll(".history-filter-btn").forEach((btn) => {
+		btn.onclick = () => renderHistoryList(btn.dataset.filter)
+	})
+
+	const exportCsvBtn = document.getElementById("exportHistoryCsv")
+	if (exportCsvBtn) exportCsvBtn.onclick = () => exportHistory("csv")
+
+	const exportJsonBtn = document.getElementById("exportHistoryJson")
+	if (exportJsonBtn) exportJsonBtn.onclick = () => exportHistory("json")
+
+	const clearHistBtn = document.getElementById("clearHistoryBtn")
+	if (clearHistBtn) clearHistBtn.onclick = clearHistory
 
 	document.getElementById("statistics").onclick = showStatistics
 	document.getElementById("hideStatistics").onclick = hideStatistics
