@@ -243,6 +243,8 @@ class TestTamilMorphology(unittest.TestCase):
             "வழிபட",
             "விநியோக",
             "நாணய",
+            "முன்வர",
+            "மூழ்கி",
         ]
         for word in adjectival_and_participles:
             cat, tag = classify_tamil_word(word)

@@ -231,6 +231,18 @@ EXCLUDED_PROPER_NOUNS = {
     "சஞ்சய்", "அஜய்", "விஜய்", "ராகவ்", "சஞ்சீவ்", "ராஜீவ்", "ரஞ்சனி", "சுசித்ரா", "சந்திரா",
 }
 
+KNOWN_LOANWORDS = {
+    'செல்போன்', 'ஆன்லைன்', 'ஆப்பிள்', 'ஆரஞ்சு', 'ஓவர்',
+    'கலெக்டர்', 'கவர்னர்', 'கார்பன்', 'கால்சியம்', 'கேபிள்',
+    'கேப்டன்', 'கேமரா', 'சோடியம்', 'டெங்கு', 'டேட்டா',
+    'பொலிசார்', 'போலீசார்', 'விஞ்ஞானி', 'மேடம்', 'குட்கா',
+    'தாலுகா', 'லோக்சபா', 'போலீஸ்', 'கவர்மெண்ட்', 'பேங்க்',
+    'போர்டு', 'பில்', 'டெஸ்ட்', 'ரெடி', 'கேஸ்', 'கோர்ட்',
+    'டிரைவர்', 'டவுன்', 'டைரக்டர்', 'ட்விட்டர்', 'டாலர்கள்',
+    'லாரிகள்', 'சினிமா', 'மாடல்', 'ரயில்கள்', 'ரத்தம்',
+    'ராணுவம்', 'ரகசியம்', 'லட்சம்', 'லட்சியம்', 'லாபம்',
+}
+
 
 def load_gazetteer_proper_nouns() -> Set[str]:
     """Load proper names and geographic entities from gazetteer files."""
@@ -425,6 +437,9 @@ def classify_tamil_word(word: str, graphemes: Optional[List[str]] = None) -> Tup
     if graphemes is None:
         graphemes = get_tamil_graphemes(word)
     
+    if "ஃ" in word:
+        return "EXCLUDED_OTHER", "CONTAINS_AYTHAM"
+
     num_letters = len(graphemes)
     if num_letters == 0:
         return "EXCLUDED_OTHER", "INVALID_TAMIL"
@@ -460,6 +475,9 @@ def classify_tamil_word(word: str, graphemes: Optional[List[str]] = None) -> Tup
     if word in EXCLUDED_PRONOUNS:
         return "EXCLUDED_OTHER", "PRONOUN"
 
+    if word in KNOWN_LOANWORDS:
+        return "EXCLUDED_OTHER", "KNOWN_LOANWORD"
+
     # Known base / exempt nouns
     if word in KNOWN_BASE_NOUNS:
         return "NOUN", "KNOWN_BASE_NOUN"
@@ -485,7 +503,7 @@ def classify_tamil_word(word: str, graphemes: Optional[List[str]] = None) -> Tup
             "அடைய", "பெற", "உணர", "இயங்க", "ஆராய", "காட்டி", "திரும்பி", "நோக்க", "பரப்ப", "நிரப்ப", "அனுப்ப",
             "கணக்கிட", "ஏற்பட", "வெளிப்பட", "பயன்பட", "உட்பட", "முன்னிட", "வளர்க்க", "தடுக்க", "கொடுக்க", "எடுக்க",
             "மறுக்க", "பிரிக்க", "கையாள", "செல்ல", "முற்பட", "நிலைநாட்ட", "உருவாக்க", "அறிவிக்க", "வெளியிட",
-            "திருப்ப", "விளங்க", "தூங்க", "உறங்க", "முயல", "விரும்ப", "கற்க", "நிற்க", "கொல்ல", "வழிபட", "செயல்பட", "சாப்பிட"
+            "திருப்ப", "விளங்க", "தூங்க", "உறங்க", "முயல", "விரும்ப", "கற்க", "நிற்க", "கொல்ல", "வழிபட", "செயல்பட", "சாப்பிட", "வர"
         )):
             return "EXCLUDED_PARTICIPLE", "INFINITIVE_VERB"
 
@@ -767,6 +785,28 @@ def classify_tamil_word(word: str, graphemes: Optional[List[str]] = None) -> Tup
     if last_grapheme in ("து", "டு", "று", "பு", "வு", "மை", "கை", "வை", "சு", "கு", "ழி", "லி", "ளி", "ரி", "தி", "சி"):
         return "NOUN", f"BASE_NOUN_VOWEL_{last_grapheme}"
 
+    # --- CONSERVATIVE HEURISTIC FILTERS ---
+    if word not in KNOWN_BASE_NOUNS and word not in USER_CURATED_WHITELIST:
+        # Aggressive case markers
+        if word.endswith(("டம்", "ஆல்", "உடன்", "வுடன்", "ருடன்", "ளுடன்", "த்தில்", "லிருந்து", "இருந்து", "க்கு", "களை", "உடைய", "னுடைய")):
+            # Exempt specific டம் ending nouns not in KNOWN_BASE_NOUNS if they are common (but most are already there)
+            if word.endswith("டம்") and not word.endswith(("படம்", "திட்டம்", "சட்டம்", "வட்டம்", "தோட்டம்", "இடம்", "மடம்", "கூட்டம்", "கட்டம்", "ஆட்டம்", "ஓட்டம்", "நாட்டம்", "பாடம்", "மட்டம்", "வேடம்", "தடம்", "கூடம்", "இப்படம்", "அப்படம்", "எப்படம்", "கோட்டம்", "பட்டம்")):
+                return "EXCLUDED_CASE", "CONSERVATIVE_CASE_MARKER"
+            elif not word.endswith("டம்"):
+                return "EXCLUDED_CASE", "CONSERVATIVE_CASE_MARKER"
+                
+        # Emphatic clitics and spoken particles
+        if word.endswith(("\u0bc7", "\u0bcb", "மட்டுமே", "தானே", "போதே", "என்னமோ", "அதுல", "இதுல", "இருக்கா", "காக்கா", "லே", "நே", "கா")):
+            return "EXCLUDED_EMPHATIC", "CONSERVATIVE_CLITIC_SPOKEN"
+            
+        # Past/Future finite verbs missing from exact match due to conjugation
+        if word.endswith(("னான்", "னாள்", "னார்", "னார்கள்", "பேன்", "பாள்", "பார்", "வார்கள்", "வான்", "வாள்", "வார்")):
+            return "EXCLUDED_PAST_FUTURE", "CONSERVATIVE_FINITE_VERB"
+            
+        # Participles and adjectival stems ending in ட்டு, ற்று, ந்து
+        if word.endswith(("ட்டு", "ற்று", "ந்து", "கிற", "கின்ற", "ஆன")):
+            return "EXCLUDED_PARTICIPLE", "CONSERVATIVE_STEM_PARTICIPLE"
+
     # Default to base noun
     return "NOUN", "BASE_NOUN"
 
@@ -800,7 +840,7 @@ def process_tamil_word_pipeline(
     print(f"Output CSV: {output_csv_path}")
     print(f"Allowed Lengths: {sorted(allowed_lengths) if allowed_lengths else 'All'}")
     print(f"Min Frequency: {min_frequency}")
-    print(f"Filter Mode: {filter_mode.upper()} (Target: NOUN & PRESENT_TENSE)")
+    print(f"Filter Mode: {filter_mode.upper()} (Target: NOUN)")
     if top_n:
         print(f"Top N: {top_n:,}")
     if export_game_json:
@@ -878,7 +918,7 @@ def process_tamil_word_pipeline(
                 stats["classified_excluded_other"] += 1
 
             # Determine acceptance based on filter_mode
-            is_target_pos = category in ("NOUN", "PRESENT_TENSE")
+            is_target_pos = category == "NOUN"
             accept = is_target_pos if filter_mode == "keep" else not is_target_pos
 
             if accept:

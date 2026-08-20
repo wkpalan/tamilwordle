@@ -19,3 +19,4 @@ Proper Noun
 Oblique Pronoun
 Personal Name
 Non-finite Infinitive
+Present Tense Finite Verbs

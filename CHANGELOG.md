@@ -52,11 +52,13 @@ All notable changes, pipeline upgrades, dictionary filtering rules, and dataset 
 
 ### Changed
 - **Master Filtered Dictionary (`data/filtered_tamil_words.csv`)**:
-  - Filtered from 4.59M raw frequency entries down to **205,387 pure, keyboard-typable base nouns and simple present tense verbs**.
+  - Filtered from 4.59M raw frequency entries down to **175,614 pure, keyboard-typable base nouns and simple present tense verbs**.
+  - Scrubbed corrupted whitelist definitions (`user_curated_whitelist_words.txt`) that were bypassing exclusion rules.
+  - Successfully purged specific proper nouns (e.g., `மகாத்மா`, `சந்திரன்`, `தில்லை`, `வங்காளம்`, `பைரவர்`, `நாயனார்`) and improper verbs (e.g., `செய்க`, `செய்ய`, `செல்ல`) that were erroneously whitelisted.
 - **Top 1,500 Frequent Words (`data/top_1500_filtered_words.csv`)**:
-  - Filtered top 1,500 frequent Tamil target words across lengths 3, 4, and 5 (verified 0 non-keyboard characters and 0 gazetteer proper names).
+  - Filtered top 1,500 frequent Tamil target words across lengths 3, 4, and 5 (verified 0 non-keyboard characters, 0 gazetteer proper names, and 0 improper verbs).
 - **Frontend Wordle Game Assets (`frontend/public/`)**:
   - `top_words.json`: `tamilMainWordList` updated with top 1,500 secret target puzzle words; `tamilEntireWordList` populated with 30,000 valid keyboard guess words.
-  - `words_3.json`: Refreshed with **38,320** valid 3-letter nouns and present tense words.
-  - `words_4.json`: Refreshed with **74,734** valid 4-letter nouns and present tense words.
-  - `words_5.json`: Refreshed with **92,333** valid 5-letter nouns and present tense words.
+  - `words_3.json`: Refreshed with **31,691** valid 3-letter nouns and present tense words.
+  - `words_4.json`: Refreshed with **63,655** valid 4-letter nouns and present tense words.
+  - `words_5.json`: Refreshed with **80,268** valid 5-letter nouns and present tense words.
